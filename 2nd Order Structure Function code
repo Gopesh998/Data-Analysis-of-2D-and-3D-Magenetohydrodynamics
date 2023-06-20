@@ -1,0 +1,82 @@
+import numpy as np
+import h5py
+import time
+
+device = "cpu"  # default device
+
+import numba as nb
+
+import numpy as cp
+
+def hdf5_reader(filename, dataset):
+    file_read = h5py.File(filename, 'r')
+    dataset_read = file_read["/" + dataset]
+    V = dataset_read[:, :]
+    return V
+
+Vx = hdf5_reader("merged_data.h5", "Bx")
+Vz = hdf5_reader("merged_data.h5", "Bz")
+
+L = 2 * np.pi
+
+Nx, Nz = np.shape(Vx)[0], np.shape(Vx)[1]
+
+dx = L / Nx
+dz = L / Nz
+
+S_array_cpu = np.zeros([Nx // 2, Nz // 2])
+S_u_r_array_cpu = np.zeros([Nx // 2, Nz // 2])
+S_ux_array_cpu = np.zeros([Nx // 2, Nz // 2])
+S_uz_array_cpu = np.zeros([Nx // 2, Nz // 2])
+
+def str_function_cpu(Vx, Vz, Ix, Iz, l_cap_x, l_cap_z, S_array_cpu, S_u_r_array_cpu, S_ux_array_cpu, S_uz_array_cpu):
+    N = len(l_cap_x)
+    for m in range(N):
+        u1, u2 = Vx[0:Nx - Ix[m], 0:Nz - Iz[m]], Vx[Ix[m]:Nx, Iz[m]:Nz]
+        w1, w2 = Vz[0:Nx - Ix[m], 0:Nz - Iz[m]], Vz[Ix[m]:Nx, Iz[m]:Nz]
+        del_u, del_w = u2[:, :] - u1[:, :], w2[:, :] - w1[:, :]
+        diff_magnitude_sqr = (del_u) ** 2 + (del_w) ** 2
+        S_array_cpu[Ix[m], Iz[m]] = np.mean(diff_magnitude_sqr[:, :])
+        S_u_r_array_cpu[Ix[m], Iz[m]] = np.mean((del_u[:, :] * l_cap_x[m] + del_w[:, :] * l_cap_z[m]) ** 2)
+        S_ux_array_cpu[Ix[m], Iz[m]] = np.mean((del_u[:, :] * l_cap_x[m]) ** 2)
+        S_uz_array_cpu[Ix[m], Iz[m]] = np.mean((del_w[:, :] * l_cap_z[m]) ** 2)
+        print(m, Ix[m] * dx, Iz[m] * dz)
+
+l, Ix, Iz = [], [], []
+count = 0
+
+t_pre_process_start = time.time()
+
+for ix in range(Nx // 2):
+    for iz in range(Nz // 2):
+        l_temp = np.sqrt((ix) ** 2 + (iz) ** 2)
+        l.append(l_temp)
+        Ix.append(ix)
+        Iz.append(iz)
+        count += 1
+
+t_pre_process_stop = time.time()
+
+print("preprocess loop =", t_pre_process_stop - t_pre_process_start)
+print("Total count", count)
+
+l, Ix, Iz = np.asarray(l), np.asarray(Ix), np.asarray(Iz)
+l_cap_x, l_cap_z = ((Ix[:]) / l[:]), ((Iz[:]) / l[:])
+l_cap_x[0], l_cap_z[0] = 0, 0
+
+t_str_func_start = time.time()
+
+str_function_cpu(Vx, Vz, Ix, Iz, l_cap_x, l_cap_z, S_array_cpu, S_u_r_array_cpu, S_ux_array_cpu, S_uz_array_cpu)
+
+t_str_func_end = time.time()
+
+print("str func compute time =", t_str_func_end - t_str_func_start)
+
+hf = h5py.File("2nd_o_str_function_mf.h5", 'w')
+hf.create_dataset("S", data=S_array_cpu)
+hf.create_dataset("S_u_r", data=S_u_r_array_cpu)
+hf.create_dataset("S_ux", data=S_ux_array_cpu)
+hf.create_dataset("S_uz", data=S_uz_array_cpu)
+hf.close()
+
+##Refrence and Acknowledgement: Prof:MK Verma,PHD Scholar:Mr. Soumyadeep Chatterjee(IIT Kanpur)
