@@ -1,1 +1,16 @@
+In this project, we utilized a remote server called "Benard" from IIT Kanpur lab to execute the following computational tasks. The objective was to verify the second and third-order structure functions for 2D Magnetohydrodynamics (MHD).
 
+1. Data Preparation:
+   - We obtained a file containing magnetic and velocity fields in Fourier space. Each element in the file had a size of (1024 x 1024).
+   - To convert the data into real fields, we performed an inverse Fourier transform using the "irfft2(file)" function.
+
+2. Second Order Structure Function:
+   - We used codes to calculate the second-order structure functions for both the magnetic and velocity fields.
+   - The output of the structure function code consisted of four segments: S, S(ur), S(ux/bx), and S(uz/bz).
+   - For the magnetic and velocity fields, we plotted the second-order structure function on a 512x512 mesh grid using the "pcolormesh" function in Python which generates the angular distribution of each point in that grid in a color format ,and our result indicates that those space magnetic and velocity fields are homogeneous in nature.
+
+3. Third Order Structure Function:
+   - Similarly, we used the code to compute the third-order structure functions for the magnetic and velocity fields.
+   - To visualize the results, we generated a quiver plot representing the relationship between S(ux/bx) and S(uz/bz).
+
+Note: The entire project was executed on the remote server "Benard" provided by IIT Kanpur lab.
