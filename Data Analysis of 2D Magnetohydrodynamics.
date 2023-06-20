@@ -12,5 +12,4 @@ In this project, we utilized a remote server called "Benard" from IIT Kanpur lab
 3. Third Order Structure Function:
    - Similarly, we used the code to compute the third-order structure functions for the magnetic and velocity fields.
    - To visualize the results, we generated a quiver plot representing the relationship between S(ux/bx) and S(uz/bz).
-
 Note: The entire project was executed on the remote server "Benard" provided by IIT Kanpur lab.
