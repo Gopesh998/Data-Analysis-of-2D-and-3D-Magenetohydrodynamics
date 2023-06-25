@@ -1,0 +1,39 @@
+import numpy as np
+import matplotlib.pyplot as plt
+#from mpl_toolkits.axes_grid1 import make_axes_localtable
+import h5py
+
+with h5py.File("str_function_VF.h5", "r") as f:
+    print("Keys: %s" % f.keys())
+    
+    data_S_u_r = list(f.keys())[0]
+    data_S_upll = list(f.keys())[1]
+    data_S_ux = list(f.keys())[2]
+    data_S_uz = list(f.keys())[3]
+
+    # Get the data
+    S_u_r = np.array(f[data_S_u_r])
+    S_upll = np.array(f[data_S_upll])
+    S_ux = np.array(f[data_S_ux])
+    S_uz = np.array(f[data_S_uz])
+print(S_ux.shape)
+Nx=512
+Nz=512
+Lz=2*(np.pi)
+Lx=2*(np.pi)
+dz=Lz/Nz
+dx=Lx/Nx
+
+# print(dx)
+z=np.arange(0,2*(np.pi),dz)
+x=np.arange(0,2*(np.pi),dx)
+X,Z=np.meshgrid(x,z)
+
+plt.quiver(X[::24,::24],Z[::24,::24],np.transpose(S_ux)[::24,::24],np.transpose(S_uz)[::24,::24])
+
+#     ######### Setting the Y label ############
+plt.title('3rd_o_str_functon_VF')  ######### Title of the Plot ###############
+
+plt.savefig('s3rdVF.jpeg') 
+    
+  
