@@ -1,0 +1,33 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import h5py
+
+with h5py.File("2nd_o_str_function_mf.h5", "r") as f:
+    print("Keys: %s" % f.keys())
+    
+    data_S = list(f.keys())[0]
+
+    # Get the data
+    S = np.array(f[data_S])
+
+    # Compute y as the distance between two points in the dataset
+    y = np.arange(S.shape[0])
+    mesh_y, mesh_x = np.meshgrid(y, y)
+    r = np.sqrt((mesh_x - mesh_y)**2)
+
+    # Compute the logarithm of S and y (excluding values of y that are equal to zero)
+    log_S = np.log(S)
+    log_y = np.log(y[y != 0])
+
+    # Compute the scaling exponent using a linear fit
+    coeffs = np.polyfit(log_y, log_S[y != 0], 1)
+    alpha = -coeffs[0]
+
+    # Plot the results
+    fig, ax = plt.subplots()
+    ax.plot(log_y, log_S, '.')
+    ax.plot(log_y, np.polyval(coeffs, log_y), label=r'$\alpha={:.2f}$'.format(alpha))
+    ax.set_xlabel(r'$\log_{10}(r)$')
+    ax.set_ylabel(r'$\log_{10}(S_2(r))$')
+    ax.legend()
+    plt.show()
