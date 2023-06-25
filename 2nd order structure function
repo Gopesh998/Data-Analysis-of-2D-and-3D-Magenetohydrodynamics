@@ -1,0 +1,74 @@
+import h5py
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Set parameters
+N = 512  # Size of grid
+L = 2*np.pi  # Size of box
+nu = 1e-6  # Kinematic viscosity
+eta = 1e-6  # Magnetic diffusivity
+
+# read the data file ###############
+def hdf5_reader(filename,dataset):
+    file_read = h5py.File(filename, 'r')
+    dataset_read = file_read["/"+dataset]
+    V = dataset_read[:,:]
+    return V
+
+
+# input field
+#change the names of the input file and datasets according to your convenience
+bx = hdf5_reader("merged_data.h5", "Bx")
+by = hdf5_reader("merged_data.h5", "Bz")
+vx = hdf5_reader("merged_data.h5", "Vx")
+vy = hdf5_reader("merged_data.h5", "Vz")
+
+
+
+# Define the size of the grid and the shape of the spectrum
+nx, ny = 1024, 1024
+k0 = 2*np.pi/1000
+kx, ky = np.meshgrid(np.fft.fftfreq(nx), np.fft.fftfreq(ny))
+k = np.sqrt(kx**2 + ky**2)
+k[0, 0] = 1  # avoid division by zero
+
+# Generate random velocity and magnetic fields
+vx = np.fft.fft2(np.random.normal(size=(nx, ny)))
+bx = np.fft.fft2(np.random.normal(size=(nx, ny)))
+
+# Calculate the structure functions
+r_min, r_max, dr = 1, 257, 2
+r_vals = np.arange(r_min, r_max, dr)
+s_vel = np.zeros_like(r_vals, dtype=np.float64)
+s_mag = np.zeros_like(r_vals, dtype=np.float64)
+for i, r in enumerate(r_vals):
+    s_vel[i] = np.mean(np.real((vx[r:, r:] - vx[:-r, r:]) ** 2 + \
+                                (vx[r:, r:] - vx[r:, :-r]) ** 2))
+    s_mag[i] = np.mean(np.real((bx[r:, r:] - bx[:-r, r:]) ** 2 + \
+                                (bx[r:, r:] - bx[r:, :-r]) ** 2))
+
+# Calculate the energy spectrum
+e_spectrum = np.zeros_like(k)
+e_spectrum[k > 0] = k[k > 0] ** (-5/3)
+e_spectrum /= np.sum(e_spectrum)
+
+# Calculate the energy flux
+flux_vel = np.zeros_like(r_vals, dtype=np.float64)
+for i, r in enumerate(r_vals):
+    s_vel_slice = s_vel[:-r]
+    k_slice = k[:-r]
+    flux_vel[i] = 2 * np.pi * np.sum(s_vel_slice * k_slice * np.gradient(k_slice, axis=0)[0])
+flux_vel *= k0 ** (5/3)
+
+
+
+# Plot the results
+fig, ax = plt.subplots(figsize=(8, 6))
+ax.loglog(k.flatten(), e_spectrum.flatten(), 'k-', label=r'$E(k) \sim k^{-5/3}$')
+ax.loglog(r_vals * k0, s_vel, 'bo', label='Velocity')
+ax.loglog(r_vals * k0, s_mag, 'ro', label='Magnetic')
+ax.loglog(r_vals[:-1] * k0, flux_vel[:-1], 'gx', label='Velocity flux')
+ax.set_xlabel(r'$k/k_0$')
+ax.set_ylabel(r'Structure function')
+ax.legend()
+plt.show()
